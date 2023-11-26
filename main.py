@@ -192,4 +192,4 @@ def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
 while True:
     if __name__ == "__main__":
         main()
-        time.sleep(10800)
+        time.sleep(21600)
