@@ -6,6 +6,7 @@ import random
 import sys
 from pathlib import Path
 
+from src.searches import TimeoutException
 from src import Browser, DailySet, Login, MorePromotions, PunchCards, Searches
 from src.constants import VERSION
 from src.loggingColoredFormatter import ColoredFormatter
@@ -125,6 +126,9 @@ def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
     logging.info(
         f'********************{ currentAccount.get("username", "") }********************'
     )
+    timeout_counter = 0  # Thêm biến đếm timeout
+    max_timeouts = 5     # Số lần tối đa trước khi chuyển tài khoản
+
     try:
         with Browser(mobile=False, account=currentAccount, args=args) as desktopBrowser:
             try:
@@ -160,11 +164,16 @@ def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
                 remainingSearches, remainingSearchesM = desktopBrowser.utils.getRemainingSearches()
                 if remainingSearches != 0:
                     accountPointsCounter = Searches(desktopBrowser).bingSearches(remainingSearches)
+                    timeout_counter = 0  # Reset biến đếm timeout khi tìm kiếm thành công
                 if remainingSearchesM != 0:
                     desktopBrowser.closeBrowser()
                     with Browser(mobile=True, account=currentAccount, args=args) as mobileBrowser:
                         accountPointsCounter = Login(mobileBrowser).login()
                         accountPointsCounter = Searches(mobileBrowser).bingSearches(remainingSearchesM)
+            except TimeoutException as e:  # Bắt và xử lý lỗi timeout cụ thể
+                timeout_counter += 1
+                if timeout_counter >= max_timeouts:
+                    raise e  # Gây ra ngoại lệ để thoát khỏi hàm và chuyển sang tài khoản tiếp theo
             except Exception as e:
                 logging.exception("Lỗi khi thực hiện tìm kiếm Bing: " + str(e))
 
@@ -186,6 +195,9 @@ def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
                     ]
                 )
             )
+    except TimeoutException:
+        # Bỏ qua lỗi timeout này, sẽ chuyển sang tài khoản tiếp theo trong vòng lặp chính
+        pass
     except Exception as e:
         logging.exception("Lỗi tổng thể trong executeBot: " + str(e))
 

@@ -200,7 +200,7 @@ class Utils:
 
     def getRemainingSearches(self):
         dashboard = self.getDashboardData()
-        searchPoints = 1
+        searchPoints = 5
         counters = dashboard["userStatus"]["counters"]
 
         # Checking and calculating for desktop search
@@ -219,7 +219,7 @@ class Utils:
 
         # Setting search points based on targetDesktop value
         if targetDesktop in [33, 102]:  # Level 1 or 2 EU
-            searchPoints = 3
+            searchPoints = 5
         elif targetDesktop == 55 or targetDesktop >= 170:  # Level 1 or 2 US
             searchPoints = 5
 
