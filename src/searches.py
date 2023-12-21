@@ -57,6 +57,7 @@ class Searches:
         search_terms = self.getGoogleTrends(numberOfSearches)
         for word in search_terms:
             i += 1
+            if i % 4 == 0: time.sleep(910)
             logging.info("[BING] " + f"{i}/{numberOfSearches}")
             points = self.bingSearch(word)
             if points <= pointsCounter:
@@ -75,6 +76,8 @@ class Searches:
         return pointsCounter
 
     def bingSearch(self, word: str):
+        timeout_counter = 0
+        max_timeouts = 4
         while True:
             try:
                 self.webdriver.get("https://bing.com")
@@ -85,6 +88,9 @@ class Searches:
                 time.sleep(random.randint(10, 15))
                 return self.browser.utils.getBingAccountPoints()
             except TimeoutException:
+                timeout_counter += 1
                 logging.error("[BING] " + "Timeout, retrying in 5 seconds...")
+                if timeout_counter >= max_timeouts:
+                    raise TimeoutException("Quá số lần timeout cho phép")
                 time.sleep(5)
-                continue
+

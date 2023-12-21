@@ -203,37 +203,30 @@ class Utils:
         searchPoints = 5
         counters = dashboard["userStatus"]["counters"]
 
-        # Checking and calculating for desktop search
-        if "pcSearch" in counters and len(counters["pcSearch"]) > 1:
-            progressDesktop = (
-                counters["pcSearch"][0]["pointProgress"]
-                + counters["pcSearch"][1]["pointProgress"]
-            )
-            targetDesktop = (
-                counters["pcSearch"][0]["pointProgressMax"]
-                + counters["pcSearch"][1]["pointProgressMax"]
-            )
-        else:
-            progressDesktop = 0
-            targetDesktop = 0
+        if "pcSearch" not in counters:
+            return 0, 0
+        progressDesktop = 0
 
-        # Setting search points based on targetDesktop value
-        if targetDesktop in [33, 102]:  # Level 1 or 2 EU
-            searchPoints = 5
-        elif targetDesktop == 55 or targetDesktop >= 170:  # Level 1 or 2 US
-            searchPoints = 5
+        for item in counters['pcSearch']:
+            progressDesktop += item.get('pointProgress', 0)
 
-        # Calculating remaining desktop searches
+        targetDesktop = 0
+
+        for item in counters['pcSearch']:
+            targetDesktop += item.get('pointProgressMax', 0)
+
+        if targetDesktop in [33, 102]:
+            # Level 1 or 2 EU/South America
+            searchPoints = 5
+        elif targetDesktop == 55 or targetDesktop >= 140:
+            # Level 1 or 2 US
+            searchPoints = 5
         remainingDesktop = int((targetDesktop - progressDesktop) / searchPoints)
-
-        # Checking and calculating for mobile search
         remainingMobile = 0
-        if "mobileSearch" in counters and len(counters["mobileSearch"]) > 0:
-            if dashboard["userStatus"]["levelInfo"]["activeLevel"] != "Level1":
-                progressMobile = counters["mobileSearch"][0]["pointProgress"]
-                targetMobile = counters["mobileSearch"][0]["pointProgressMax"]
-                remainingMobile = int((targetMobile - progressMobile) / searchPoints)
-
+        if dashboard["userStatus"]["levelInfo"]["activeLevel"] != "Level1":
+            progressMobile = counters["mobileSearch"][0]["pointProgress"]
+            targetMobile = counters["mobileSearch"][0]["pointProgressMax"]
+            remainingMobile = int((targetMobile - progressMobile) / searchPoints)
         return remainingDesktop, remainingMobile
 
 

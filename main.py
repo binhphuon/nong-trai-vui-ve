@@ -6,7 +6,7 @@ import random
 import sys
 from pathlib import Path
 
-from src.searches import TimeoutException
+from selenium.common.exceptions import TimeoutException
 from src import Browser, DailySet, Login, MorePromotions, PunchCards, Searches
 from src.constants import VERSION
 from src.loggingColoredFormatter import ColoredFormatter
@@ -127,7 +127,7 @@ def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
         f'********************{ currentAccount.get("username", "") }********************'
     )
     timeout_counter = 0  # Thêm biến đếm timeout
-    max_timeouts = 5     # Số lần tối đa trước khi chuyển tài khoản
+    max_timeouts = 4     # Số lần tối đa trước khi chuyển tài khoản
 
     try:
         with Browser(mobile=False, account=currentAccount, args=args) as desktopBrowser:
@@ -163,19 +163,32 @@ def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
             try:
                 remainingSearches, remainingSearchesM = desktopBrowser.utils.getRemainingSearches()
                 if remainingSearches != 0:
+                    logging.info(
+                        f"Doing pc search"
+                    )                    
                     accountPointsCounter = Searches(desktopBrowser).bingSearches(remainingSearches)
+
                     timeout_counter = 0  # Reset biến đếm timeout khi tìm kiếm thành công
+                else:
+                    logging.info(
+                        f"Pc search is done"
+                    )
                 if remainingSearchesM != 0:
                     desktopBrowser.closeBrowser()
                     with Browser(mobile=True, account=currentAccount, args=args) as mobileBrowser:
                         accountPointsCounter = Login(mobileBrowser).login()
                         accountPointsCounter = Searches(mobileBrowser).bingSearches(remainingSearchesM)
-            except TimeoutException as e:  # Bắt và xử lý lỗi timeout cụ thể
+                else:
+                    logging.info(
+                        f"Mobile search is done"
+                    )
+            except TimeoutException as e:
                 timeout_counter += 1
+                logging.exception("Timeout trong quá trình tìm kiếm Bing: " + str(e))
                 if timeout_counter >= max_timeouts:
-                    raise e  # Gây ra ngoại lệ để thoát khỏi hàm và chuyển sang tài khoản tiếp theo
+                    return  # Thoát khỏi hàm để chuyển sang tài khoản tiếp theo
             except Exception as e:
-                logging.exception("Lỗi khi thực hiện tìm kiếm Bing: " + str(e))
+                logging.exception("Lỗi khác khi thực hiện tìm kiếm Bing: " + str(e))
 
             # Kết thúc và gửi thông báo
             logging.info(
@@ -195,9 +208,7 @@ def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
                     ]
                 )
             )
-    except TimeoutException:
-        # Bỏ qua lỗi timeout này, sẽ chuyển sang tài khoản tiếp theo trong vòng lặp chính
-        pass
+            
     except Exception as e:
         logging.exception("Lỗi tổng thể trong executeBot: " + str(e))
 
