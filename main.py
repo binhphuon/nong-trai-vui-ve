@@ -197,7 +197,7 @@ def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
             logging.info(
                 f"[POINTS] You are now at {desktopBrowser.utils.formatNumber(accountPointsCounter)} points !\n"
             )
-            if desktopBrowser.utils.formatNumber(accountPointsCounter) > 3000:
+            if float(desktopBrowser.utils.formatNumber(accountPointsCounter)) > 3000:
                 notifier.send(
                     "\n".join(
                         [
