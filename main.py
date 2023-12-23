@@ -197,22 +197,35 @@ def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
             logging.info(
                 f"[POINTS] You are now at {desktopBrowser.utils.formatNumber(accountPointsCounter)} points !\n"
             )
-
-            notifier.send(
-                "\n".join(
-                    [
-                        "_____________________",
-                        f"{currentAccount.get('username', '')}",
-                        f"Earned: {desktopBrowser.utils.formatNumber(accountPointsCounter - startingPoints)}",
-                        f"Total: {desktopBrowser.utils.formatNumber(accountPointsCounter)}",
-                    ]
+            if desktopBrowser.utils.formatNumber(accountPointsCounter) > 3000:
+                notifier.send(
+                    "\n".join(
+                        [
+                            "_____________________",
+                            f"{currentAccount.get('username', '')}",
+                            f"Earned: {desktopBrowser.utils.formatNumber(accountPointsCounter - startingPoints)}",
+                            f"Total: {desktopBrowser.utils.formatNumber(accountPointsCounter)}",
+                            f"@everyone"
+                        ]
+                    )
                 )
-            )
-            
+            else:
+                notifier.send(
+                    "\n".join(
+                        [
+                            "_____________________",
+                            f"{currentAccount.get('username', '')}",
+                            f"Earned: {desktopBrowser.utils.formatNumber(accountPointsCounter - startingPoints)}",
+                            f"Total: {desktopBrowser.utils.formatNumber(accountPointsCounter)}",
+                        ]
+                    )
+                )
+
+                
     except Exception as e:
         logging.exception("Lỗi tổng thể trong executeBot: " + str(e))
 
 while True:
     if __name__ == "__main__":
         main()
-        time.sleep(21600)
+        time.sleep(18000)

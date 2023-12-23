@@ -31,5 +31,5 @@ class Notifier:
 
     def discord(self, message):
         url = self.args["discord"]
-        data = {"username": "Microsoft Rewards Farmer", "content": message}
+        data = {"username": "Nong dan vui ve", "content": message}
         requests.post(url, data=data)
