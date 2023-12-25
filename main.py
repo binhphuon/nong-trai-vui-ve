@@ -197,7 +197,14 @@ def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
             logging.info(
                 f"[POINTS] You are now at {desktopBrowser.utils.formatNumber(accountPointsCounter)} points !\n"
             )
-            if float(desktopBrowser.utils.formatNumber(accountPointsCounter)) > 3000:
+
+
+            input_str = desktopBrowser.utils.formatNumber(accountPointsCounter)
+            # Loại bỏ dấu phẩy
+            cleaned_str = input_str.replace(",", "")
+            # Chuyển đổi thành float
+            float_value = float(cleaned_str)
+            if float_value > 3000:
                 notifier.send(
                     "\n".join(
                         [
