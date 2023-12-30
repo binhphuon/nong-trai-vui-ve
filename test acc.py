@@ -137,111 +137,16 @@ def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
                     logging.exception("Lỗi khi đăng nhập: " + str(e))
                     notifier.send_login_failure(currentAccount.get('username'))
                     continue  # Chuyển sang tài khoản tiếp theo nếu không thể đăng nhập
-
-            startingPoints = accountPointsCounter
-            logging.info(
-                f"[POINTS] You have {desktopBrowser.utils.formatNumber(accountPointsCounter)} points on your account !"
-            )
-
-            # Thực hiện DailySet
+            time.sleep(10)
+            desktopBrowser.closeBrowser()
             try:
-                DailySet(desktopBrowser).completeDailySet()
-            except Exception as e:
-                logging.exception("Lỗi khi thực hiện DailySet: " + str(e))
-
-            # Thực hiện PunchCards
-            try:
-                PunchCards(desktopBrowser).completePunchCards()
-            except Exception as e:
-                logging.exception("Lỗi khi thực hiện PunchCards: " + str(e))
-
-            # Thực hiện MorePromotions
-            try:
-                MorePromotions(desktopBrowser).completeMorePromotions()
-            except Exception as e:
-                logging.exception("Lỗi khi thực hiện MorePromotions: " + str(e))
-
-            # Thực hiện tìm kiếm Bing
-            try: #Search pc
-                remainingSearches, remainingSearchesM = desktopBrowser.utils.getRemainingSearches()
-                if remainingSearches != 0:
-                    logging.info(
-                        f"Doing pc search"
-                    )                    
-                    accountPointsCounter = Searches(desktopBrowser).bingSearches(remainingSearches)
-
-                    timeout_counter = 0  # Reset biến đếm timeout khi tìm kiếm thành công
-                else:
-                    logging.info(
-                        f"Pc search is done"
-                    )
-                    #Search mobile
-                    
-                if remainingSearchesM != 0:
-                    desktopBrowser.closeBrowser()
+                with Browser(mobile=True, account=currentAccount, args=args) as mobileBrowser:
                     try:
-                        with Browser(mobile=True, account=currentAccount, args=args) as mobileBrowser:
-                            try:
-                                accountPointsCounter = Login(mobileBrowser).login()
-                            except Exception as e:
-                                logging.exception("Lỗi khi đăng nhập trên mobile: " + str(e))
-                                notifier.send_login_failure(currentAccount.get('username'))
-                                continue  # Chuyển sang tài khoản tiếp theo nếu không thể đăng nhập
-
-                            accountPointsCounter = Searches(mobileBrowser).bingSearches(remainingSearchesM)
+                        accountPointsCounter = Login(mobileBrowser).login()
                     except Exception as e:
-                        logging.exception("Lỗi tổng thể khi thực hiện trên mobile: " + str(e))
-
-                else:
-                    logging.info(
-                        f"Mobile search is done"
-                    )
-                    
-            except TimeoutException as e:
-                timeout_counter += 1
-                logging.exception("Timeout trong quá trình tìm kiếm Bing: " + str(e))
-                if timeout_counter >= max_timeouts:
-                    return  # Thoát khỏi hàm để chuyển sang tài khoản tiếp theo
-            except Exception as e:
-                logging.exception("Lỗi khác khi thực hiện tìm kiếm Bing: " + str(e))
-
-            # Kết thúc và gửi thông báo
-            logging.info(
-                f"[POINTS] You have earned {desktopBrowser.utils.formatNumber(accountPointsCounter - startingPoints)} points today !"
-            )
-            logging.info(
-                f"[POINTS] You are now at {desktopBrowser.utils.formatNumber(accountPointsCounter)} points !\n"
-            )
-
-
-            input_str = desktopBrowser.utils.formatNumber(accountPointsCounter)
-            # Loại bỏ dấu phẩy
-            cleaned_str = input_str.replace(",", "")
-            # Chuyển đổi thành float
-            float_value = float(cleaned_str)
-            if float_value > 3000:
-                notifier.send(
-                    "\n".join(
-                        [
-                            "_____________________",
-                            f"{currentAccount.get('username', '')}",
-                            f"Earned: {desktopBrowser.utils.formatNumber(accountPointsCounter - startingPoints)}",
-                            f"Total: {desktopBrowser.utils.formatNumber(accountPointsCounter)}",
-                            f"@everyone"
-                        ]
-                    )
-                )
-            else:
-                notifier.send(
-                    "\n".join(
-                        [
-                            "_____________________",
-                            f"{currentAccount.get('username', '')}",
-                            f"Earned: {desktopBrowser.utils.formatNumber(accountPointsCounter - startingPoints)}",
-                            f"Total: {desktopBrowser.utils.formatNumber(accountPointsCounter)}",
-                        ]
-                    )
-                )
+                        logging.exception("Lỗi khi đăng nhập trên mobile: " + str(e))
+                        notifier.send_login_failure(currentAccount.get('username'))
+                        continue  # Chuyển sang tài khoản tiếp theo nếu không thể đăng nhập
 
                 
     except Exception as e:

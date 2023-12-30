@@ -33,3 +33,7 @@ class Notifier:
         url = self.args["discord"]
         data = {"username": "Nong dan vui ve", "content": message}
         requests.post(url, data=data)
+
+    def send_login_failure(self, account_username):
+        message = f"Account {account_username} đăng nhập không thành công, @everyone"
+        self.send(message)

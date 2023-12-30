@@ -2,7 +2,7 @@ import contextlib
 import logging
 import time
 import urllib.parse
-
+from selenium.common.exceptions import WebDriverException, TimeoutException
 from selenium.webdriver.common.by import By
 
 from src.browser import Browser
@@ -47,37 +47,36 @@ class Login:
         logging.info("[LOGIN] Logged-in successfully !")
         return points
 
+
     def executeLogin(self):
-        self.utils.waitUntilVisible(By.ID, "loginHeader", 10)
-        logging.info("[LOGIN] " + "Writing email...")
-        self.webdriver.find_element(By.NAME, "loginfmt").send_keys(
-            self.browser.username
-        )
-        self.webdriver.find_element(By.ID, "idSIButton9").click()
-
         try:
-            self.enterPassword(self.browser.password)
-        except Exception:  # pylint: disable=broad-except
-            logging.error("[LOGIN] " + "2FA required !")
-            with contextlib.suppress(Exception):
-                code = self.webdriver.find_element(
-                    By.ID, "idRemoteNGC_DisplaySign"
-                ).get_attribute("innerHTML")
-                logging.error("[LOGIN] " + f"2FA code: {code}")
-            logging.info("[LOGIN] Press enter when confirmed...")
-            input()
+            for attempt in range(3):  # Thử tối đa 3 lần
+                try:
+                    self.utils.waitUntilVisible(By.ID, "loginHeader", 10)
+                    self.webdriver.find_element(By.NAME, "loginfmt").send_keys(self.browser.username)
+                    self.webdriver.find_element(By.ID, "idSIButton9").click()
+                    self.enterPassword(self.browser.password)
+                    time.sleep(10)
+                    if self.isLoginSuccessful():
+                        return
+                    else:
+                        logging.info(f"[LOGIN] Đăng nhập thất bại, thử lại lần {attempt + 1}")
+                except WebDriverException:
+                    logging.error("[LOGIN] Trình duyệt không phản hồi, thử lại...")
+                    # Khởi động lại trình duyệt ở đây nếu cần
 
-        while not (
-            urllib.parse.urlparse(self.webdriver.current_url).path == "/"
-            and urllib.parse.urlparse(self.webdriver.current_url).hostname
-            == "account.microsoft.com"
-        ):
-            self.utils.tryDismissAllMessages()
-            time.sleep(1)
+            logging.error("[LOGIN] Không thể đăng nhập sau 3 lần thử, chuyển sang tài khoản tiếp theo")
+            raise Exception("Đăng nhập thất bại sau 3 lần thử")
+        except TimeoutException:
+            logging.error("[LOGIN] Quá thời gian chờ, chuyển sang tài khoản tiếp theo")
+            raise
 
-        self.utils.waitUntilVisible(
-            By.CSS_SELECTOR, 'html[data-role-name="MeePortal"]', 10
-        )
+    def isLoginSuccessful(self):
+        try:
+            self.utils.waitUntilVisible(By.CSS_SELECTOR, 'html[data-role-name="MeePortal"]', 10)
+            return True
+        except TimeoutException:
+            return False
 
     def enterPassword(self, password):
         self.utils.waitUntilClickable(By.NAME, "passwd", 10)
