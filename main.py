@@ -13,6 +13,7 @@ from src.loggingColoredFormatter import ColoredFormatter
 from src.notifier import Notifier
 import time
 
+
 POINTS_COUNTER = 0
 
 
@@ -98,7 +99,7 @@ def bannerDisplay():
     ╚═╝     ╚═╝╚══════╝    ╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝╚═╝  ╚═╝"""
     logging.error(farmerBanner)
     logging.warning(
-        f"        by Charles Bel (@charlesbel)               version {VERSION}\n"
+        f"        by binhphuon             version {VERSION}\n"
     )
 
 
@@ -129,14 +130,16 @@ def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
     timeout_counter = 0  # Thêm biến đếm timeout
     max_timeouts = 4     # Số lần tối đa trước khi chuyển tài khoản
 
-        try:
-            with Browser(mobile=False, account=currentAccount, args=args) as desktopBrowser:
-                try:
-                    accountPointsCounter = Login(desktopBrowser).login()
-                except Exception as e:
-                    logging.exception("Lỗi khi đăng nhập: " + str(e))
-                    notifier.send_login_failure(currentAccount.get('username'))
-                    continue  # Chuyển sang tài khoản tiếp theo nếu không thể đăng nhập
+    try:
+        with Browser(mobile=False, account=currentAccount, args=args) as desktopBrowser:
+            try:
+                accountPointsCounter = Login(desktopBrowser).login()
+            except Exception as e:
+                logging.exception("Lỗi khi đăng nhập: " + str(e))
+                notifier.send_login_failure(currentAccount.get('username'))
+                return    # Chuyển sang tài khoản tiếp theo nếu không thể đăng nhập
+
+
 
             startingPoints = accountPointsCounter
             logging.info(
@@ -186,12 +189,12 @@ def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
                             except Exception as e:
                                 logging.exception("Lỗi khi đăng nhập trên mobile: " + str(e))
                                 notifier.send_login_failure(currentAccount.get('username'))
-                                continue  # Chuyển sang tài khoản tiếp theo nếu không thể đăng nhập
+                                return    # Chuyển sang tài khoản tiếp theo nếu không thể đăng nhập
 
                             accountPointsCounter = Searches(mobileBrowser).bingSearches(remainingSearchesM)
                     except Exception as e:
                         logging.exception("Lỗi tổng thể khi thực hiện trên mobile: " + str(e))
-
+                        return  
                 else:
                     logging.info(
                         f"Mobile search is done"
@@ -245,9 +248,11 @@ def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
 
                 
     except Exception as e:
-        logging.exception("Lỗi tổng thể trong executeBot: " + str(e))
-
+        logging.exception("Một lỗi đã xảy ra: " + str(e))
+        error_message = f"Lỗi đã xảy ra khi thực hiện nhiệm vụ với tài khoản {currentAccount.get('username')}: {str(e)} @everyone"
+        notifier.send_error_notification(error_message)
+        
 while True:
     if __name__ == "__main__":
         main()
-        time.sleep(18000)
+        time.sleep(900)

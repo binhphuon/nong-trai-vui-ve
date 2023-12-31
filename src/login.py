@@ -53,10 +53,18 @@ class Login:
             for attempt in range(3):  # Thử tối đa 3 lần
                 try:
                     self.utils.waitUntilVisible(By.ID, "loginHeader", 10)
+                    logging.info("[LOGIN] " + "Writing email...")
                     self.webdriver.find_element(By.NAME, "loginfmt").send_keys(self.browser.username)
                     self.webdriver.find_element(By.ID, "idSIButton9").click()
                     self.enterPassword(self.browser.password)
-                    time.sleep(10)
+
+                    while not (
+                        urllib.parse.urlparse(self.webdriver.current_url).path == "/"
+                        and urllib.parse.urlparse(self.webdriver.current_url).hostname
+                        == "account.microsoft.com"
+                    ):
+                        self.utils.tryDismissAllMessages()
+                        time.sleep(1)
                     if self.isLoginSuccessful():
                         return
                     else:

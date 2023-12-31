@@ -129,15 +129,15 @@ def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
     timeout_counter = 0  # Thêm biến đếm timeout
     max_timeouts = 4     # Số lần tối đa trước khi chuyển tài khoản
 
-        try:
-            with Browser(mobile=False, account=currentAccount, args=args) as desktopBrowser:
-                try:
-                    accountPointsCounter = Login(desktopBrowser).login()
-                except Exception as e:
-                    logging.exception("Lỗi khi đăng nhập: " + str(e))
-                    notifier.send_login_failure(currentAccount.get('username'))
-                    continue  # Chuyển sang tài khoản tiếp theo nếu không thể đăng nhập
-            time.sleep(10)
+    try:
+        with Browser(mobile=False, account=currentAccount, args=args) as desktopBrowser:
+            try:
+                accountPointsCounter = Login(desktopBrowser).login()
+            except Exception as e:
+                logging.exception("Lỗi khi đăng nhập: " + str(e))
+                notifier.send_login_failure(currentAccount.get('username'))
+                return    # Chuyển sang tài khoản tiếp theo nếu không thể đăng nhập
+            time.sleep(1)
             desktopBrowser.closeBrowser()
             try:
                 with Browser(mobile=True, account=currentAccount, args=args) as mobileBrowser:
@@ -146,7 +146,10 @@ def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
                     except Exception as e:
                         logging.exception("Lỗi khi đăng nhập trên mobile: " + str(e))
                         notifier.send_login_failure(currentAccount.get('username'))
-                        continue  # Chuyển sang tài khoản tiếp theo nếu không thể đăng nhập
+                        return    # Chuyển sang tài khoản tiếp theo nếu không thể đăng nhập
+            except Exception as e:
+                logging.exception("Lỗi tổng thể khi thực hiện trên mobile: " + str(e))
+                return  
 
                 
     except Exception as e:

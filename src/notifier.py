@@ -37,3 +37,9 @@ class Notifier:
     def send_login_failure(self, account_username):
         message = f"Account {account_username} đăng nhập không thành công, @everyone"
         self.send(message)
+        
+    def send_error_notification(self, message):
+        if "discord" in self.args:
+            self.discord(message)
+        else:
+            logging.warning("Discord webhook is not configured.")
