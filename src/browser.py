@@ -3,7 +3,7 @@ import logging
 import random
 from pathlib import Path
 from typing import Any
-
+import uuid
 import ipapi
 import seleniumwire.undetected_chromedriver as webdriver
 from selenium.webdriver.chrome.webdriver import WebDriver
