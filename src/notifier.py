@@ -14,7 +14,16 @@ class Notifier:
             if key in MAX_LENGTHS.keys() and value is not None
         }
 
-    def send(self, message: str):
+    def send(self, message: str, user = None):
+        if user != None:
+            message = "\n".join(
+                [
+                    "🏅 MS Rewards Farmer",
+                    f"👤 Account: {user.get('username', '')}",
+                    message
+                ]
+            )
+
         for type in self.args:
             if len(message) > MAX_LENGTHS[type]:
                 for i in range(0, len(message), MAX_LENGTHS[type]):
@@ -31,15 +40,5 @@ class Notifier:
 
     def discord(self, message):
         url = self.args["discord"]
-        data = {"username": "Nong dan vui ve", "content": message}
+        data = {"username": "Microsoft Rewards Farmer", "content": message}
         requests.post(url, data=data)
-
-    def send_login_failure(self, account_username):
-        message = f"Account {account_username} đăng nhập không thành công, @everyone"
-        self.send(message)
-        
-    def send_error_notification(self, message):
-        if "discord" in self.args:
-            self.discord(message)
-        else:
-            logging.warning("Discord webhook is not configured.")

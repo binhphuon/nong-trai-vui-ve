@@ -17,13 +17,16 @@ class PunchCards:
         self.webdriver = browser.webdriver
 
     def completePunchCard(self, url: str, childPromotions: dict):
+        # Function to complete a specific punch card
         self.webdriver.get(url)
         for child in childPromotions:
             if child["complete"] is False:
                 if child["promotionType"] == "urlreward":
+                    # Click on offer CTA and visit new tab for URL rewards
                     self.webdriver.find_element(By.CLASS_NAME, "offer-cta").click()
                     self.browser.utils.visitNewTab(random.randint(13, 17))
                 if child["promotionType"] == "quiz":
+                    # Click on offer CTA and complete quiz in a new tab
                     self.webdriver.find_element(By.CLASS_NAME, "offer-cta").click()
                     self.browser.utils.switchToNewTab(8)
                     counter = str(
@@ -35,20 +38,22 @@ class PunchCards:
                         int(s) for s in counter.split() if s.isdigit()
                     )
                     for question in range(numberOfQuestions):
+                        # Answer random quiz questions
                         self.webdriver.find_element(
                             By.XPATH,
                             f'//*[@id="QuestionPane{question}"]/div[1]/div[2]/a[{random.randint(1, 3)}]/div',
                         ).click()
-                        time.sleep(5)
+                        time.sleep(random.randint(100, 700) / 100)
                         self.webdriver.find_element(
                             By.XPATH,
                             f'//*[@id="AnswerPane{question}"]/div[1]/div[2]/div[4]/a/div/span/input',
                         ).click()
-                        time.sleep(3)
-                    time.sleep(5)
+                        time.sleep(random.randint(100, 700) / 100)
+                    time.sleep(random.randint(100, 700) / 100)
                     self.browser.utils.closeCurrentTab()
 
     def completePunchCards(self):
+        # Function to complete all punch cards
         logging.info("[PUNCH CARDS] " + "Trying to complete the Punch Cards...")
         self.completePromotionalItems()
         punchCards = self.browser.utils.getDashboardData()["punchCards"]
@@ -60,6 +65,7 @@ class PunchCards:
                     and not punchCard["parentPromotion"]["complete"]
                     and punchCard["parentPromotion"]["pointProgressMax"] != 0
                 ):
+                    # Complete each punch card
                     self.completePunchCard(
                         punchCard["parentPromotion"]["attributes"]["destination"],
                         punchCard["childPromotions"],
@@ -67,11 +73,12 @@ class PunchCards:
             except Exception:  # pylint: disable=broad-except
                 self.browser.utils.resetTabs()
         logging.info("[PUNCH CARDS] Completed the Punch Cards successfully !")
-        time.sleep(2)
+        time.sleep(random.randint(100, 700) / 100)
         self.webdriver.get(BASE_URL)
-        time.sleep(2)
+        time.sleep(random.randint(100, 700) / 100)
 
     def completePromotionalItems(self):
+        # Function to complete promotional items
         with contextlib.suppress(Exception):
             item = self.browser.utils.getDashboardData()["promotionalItem"]
             destUrl = urllib.parse.urlparse(item["destinationUrl"])
@@ -87,6 +94,7 @@ class PunchCards:
                     or destUrl.hostname == "www.bing.com"
                 )
             ):
+                # Click on promotional item and visit new tab
                 self.webdriver.find_element(
                     By.XPATH, '//*[@id="promo-item"]/section/div/div/div/span'
                 ).click()
