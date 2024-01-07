@@ -332,5 +332,7 @@ def save_previous_points_data(data):
         json.dump(data, file, indent=4)
 
 
-if __name__ == "__main__":
-    main()
+while True:
+    if __name__ == "__main__":
+        main()
+        time.sleep(900)
