@@ -219,8 +219,8 @@ def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
     startingPoints = 0
 
     with Browser(mobile=False, account=currentAccount, args=args) as desktopBrowser:
-		try:
-        	accountPointsCounter = Login(desktopBrowser).login()
+	try:
+            accountPointsCounter = Login(desktopBrowser).login()
         except:
             logging.info("Failed to log in Desktop")
         startingPoints = accountPointsCounter
@@ -249,11 +249,11 @@ def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
             VersusGame(desktopBrowser).completeVersusGame()
         except:
             logging.info("Failed to do VersusGame")
-		try:
-        	(
+	try:
+            (
             	remainingSearches,
             	remainingSearchesM,
-        	) = desktopBrowser.utils.getRemainingSearches()
+            ) = desktopBrowser.utils.getRemainingSearches()
         except:
             logging.info("Failed to getRemainingSearches")
         # Introduce random pauses before and after searches
@@ -262,8 +262,8 @@ def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
         )  # Random pause between 11 to 15 seconds
         time.sleep(pause_before_search)
 		
-		try:
-        	if remainingSearches != 0:
+	try:
+            if remainingSearches != 0:
             	accountPointsCounter = Searches(desktopBrowser).bingSearches(
                 	remainingSearches
             	)
@@ -280,20 +280,20 @@ def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
         goalTitle = desktopBrowser.utils.getGoalTitle()
         desktopBrowser.closeBrowser()
 
-	try:
+    try:
     	if remainingSearchesM != 0:
         	desktopBrowser.closeBrowser()
 	        with Browser(mobile=True, account=currentAccount, args=args) as mobileBrowser:
-				try:
-            		accountPointsCounter = Login(mobileBrowser).login()
-			    except:
-        			logging.info("Failed to log in mobile")
-				try:
-            		accountPointsCounter = Searches(mobileBrowser).bingSearches(
-                		remainingSearchesM
+		    try:
+                        accountPointsCounter = Login(mobileBrowser).login()
+		    except:
+        		logging.info("Failed to log in mobile")
+		    try:
+                        accountPointsCounter = Searches(mobileBrowser).bingSearches(
+                            remainingSearchesM
             		)
-			    except:
-        			logging.info("Failed to do mobile Searches")
+		    except:
+        		logging.info("Failed to do mobile Searches")
 
             	mobileBrowser.utils.goHome()
             	goalPoints = 3000
