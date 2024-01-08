@@ -219,7 +219,10 @@ def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
     startingPoints = 0
 
     with Browser(mobile=False, account=currentAccount, args=args) as desktopBrowser:
-        accountPointsCounter = Login(desktopBrowser).login()
+		try:
+        	accountPointsCounter = Login(desktopBrowser).login()
+        except:
+            logging.info("Failed to log in Desktop")
         startingPoints = accountPointsCounter
         if startingPoints == "Locked":
             notifier.send("🚫 Account is Locked", currentAccount)
@@ -230,49 +233,75 @@ def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
         logging.info(
             f"[POINTS] You have {desktopBrowser.utils.formatNumber(accountPointsCounter)} points on your account"
         )
-        DailySet(desktopBrowser).completeDailySet()
-        PunchCards(desktopBrowser).completePunchCards()
-        MorePromotions(desktopBrowser).completeMorePromotions()
-        VersusGame(desktopBrowser).completeVersusGame()
-        (
-            remainingSearches,
-            remainingSearchesM,
-        ) = desktopBrowser.utils.getRemainingSearches()
-
+        try:
+            DailySet(desktopBrowser).completeDailySet()
+        except:
+            logging.info("Failed to do Daily set")
+        try:
+            PunchCards(desktopBrowser).completePunchCards()
+        except:
+            logging.info("Failed to do PunchCards")
+        try:
+            MorePromotions(desktopBrowser).completeMorePromotions()
+        except:
+            logging.info("Failed to do MorePromotions")
+        try:
+            VersusGame(desktopBrowser).completeVersusGame()
+        except:
+            logging.info("Failed to do VersusGame")
+		try:
+        	(
+            	remainingSearches,
+            	remainingSearchesM,
+        	) = desktopBrowser.utils.getRemainingSearches()
+        except:
+            logging.info("Failed to getRemainingSearches")
         # Introduce random pauses before and after searches
         pause_before_search = random.uniform(
             11.0, 15.0
         )  # Random pause between 11 to 15 seconds
         time.sleep(pause_before_search)
-
-        if remainingSearches != 0:
-            accountPointsCounter = Searches(desktopBrowser).bingSearches(
-                remainingSearches
-            )
-
+		
+		try:
+        	if remainingSearches != 0:
+            	accountPointsCounter = Searches(desktopBrowser).bingSearches(
+                	remainingSearches
+            	)
+        except:
+            logging.info("Failed to do Searches")
+			
         pause_after_search = random.uniform(
             11.0, 15.0
         )  # Random pause between 11 to 15 seconds
         time.sleep(pause_after_search)
 
         desktopBrowser.utils.goHome()
-        goalPoints = desktopBrowser.utils.getGoalPoints()
+        goalPoints = 3000
         goalTitle = desktopBrowser.utils.getGoalTitle()
         desktopBrowser.closeBrowser()
 
-    if remainingSearchesM != 0:
-        desktopBrowser.closeBrowser()
-        with Browser(mobile=True, account=currentAccount, args=args) as mobileBrowser:
-            accountPointsCounter = Login(mobileBrowser).login()
-            accountPointsCounter = Searches(mobileBrowser).bingSearches(
-                remainingSearchesM
-            )
+	try:
+    	if remainingSearchesM != 0:
+        	desktopBrowser.closeBrowser()
+	        with Browser(mobile=True, account=currentAccount, args=args) as mobileBrowser:
+				try:
+            		accountPointsCounter = Login(mobileBrowser).login()
+			    except:
+        			logging.info("Failed to log in mobile")
+				try:
+            		accountPointsCounter = Searches(mobileBrowser).bingSearches(
+                		remainingSearchesM
+            		)
+			    except:
+        			logging.info("Failed to do mobile Searches")
 
-            mobileBrowser.utils.goHome()
-            goalPoints = 3000
-            goalTitle = mobileBrowser.utils.getGoalTitle()
-            mobileBrowser.closeBrowser()
-
+            	mobileBrowser.utils.goHome()
+            	goalPoints = 3000
+            	goalTitle = mobileBrowser.utils.getGoalTitle()
+            	mobileBrowser.closeBrowser()
+    except:
+        logging.info("Failed to do mobile Searches")
+		
     logging.info(
         f"[POINTS] You have earned {desktopBrowser.utils.formatNumber(accountPointsCounter - startingPoints)} points today !"
     )
