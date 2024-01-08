@@ -269,7 +269,7 @@ def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
             )
 
             mobileBrowser.utils.goHome()
-            goalPoints = mobileBrowser.utils.getGoalPoints()
+            goalPoints = 3000
             goalTitle = mobileBrowser.utils.getGoalTitle()
             mobileBrowser.closeBrowser()
 
