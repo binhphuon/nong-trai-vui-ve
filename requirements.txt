@@ -2,3 +2,6 @@ pip install requests selenium>=4.15.2 ipapi undetected-chromedriver selenium-wir
 
 
 pip install --upgrade requests selenium>=4.15.2 ipapi undetected-chromedriver selenium-wire pandas numpy>=1.22.2 setuptools>=69.0.2 psutil
+
+
+
