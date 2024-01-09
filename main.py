@@ -10,7 +10,7 @@ import sys
 import time
 from datetime import datetime
 from pathlib import Path
-
+import os
 import pandas as pd
 import psutil
 
@@ -58,6 +58,8 @@ def main():
             previous_points_data[account_name] = earned_points
 
             logging.info(f"[POINTS] Data for '{account_name}' appended to the file.")
+            close_chrome()
+            time.sleep(10)
         except Exception as e:
             notifier.send("⚠️ Error occurred, please check the log", currentAccount)
             logging.exception(f"{e.__class__.__name__}: {e}")
@@ -65,6 +67,17 @@ def main():
     # Save the current day's points data for the next day in the "logs" folder
     save_previous_points_data(previous_points_data)
     logging.info("[POINTS] Data saved for the next day.")
+
+
+def close_chrome():
+    """
+    Hàm này sẽ tắt tất cả các cửa sổ Chrome đang mở.
+    """
+    os.system("taskkill /im chrome.exe /f")
+
+
+
+
 
 
 def log_daily_points_to_csv(date, earned_points, points_difference):
