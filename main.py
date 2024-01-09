@@ -210,123 +210,119 @@ def setupAccounts() -> list:
 
 
 def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
-    logging.info(
-        f'********************{ currentAccount.get("username", "") }********************'
-    )
+    logging.info(f'******************** {currentAccount.get("username", "")} ********************')
     accountPointsCounter = 0
     remainingSearches = 0
     remainingSearchesM = 0
     startingPoints = 0
 
-    with Browser(mobile=False, account=currentAccount, args=args) as desktopBrowser:
-	try:
-            accountPointsCounter = Login(desktopBrowser).login()
-        except:
-            logging.info("Failed to log in Desktop")
-        startingPoints = accountPointsCounter
-        if startingPoints == "Locked":
-            notifier.send("🚫 Account is Locked", currentAccount)
-            return 0
-        if startingPoints == "Verify":
-            notifier.send("❗ Account needs to be verified", currentAccount)
-            return 0
-        logging.info(
-            f"[POINTS] You have {desktopBrowser.utils.formatNumber(accountPointsCounter)} points on your account"
-        )
-        try:
-            DailySet(desktopBrowser).completeDailySet()
-        except:
-            logging.info("Failed to do Daily set")
-        try:
-            PunchCards(desktopBrowser).completePunchCards()
-        except:
-            logging.info("Failed to do PunchCards")
-        try:
-            MorePromotions(desktopBrowser).completeMorePromotions()
-        except:
-            logging.info("Failed to do MorePromotions")
-        try:
-            VersusGame(desktopBrowser).completeVersusGame()
-        except:
-            logging.info("Failed to do VersusGame")
-	try:
-            (
-            	remainingSearches,
-            	remainingSearchesM,
-            ) = desktopBrowser.utils.getRemainingSearches()
-        except:
-            logging.info("Failed to getRemainingSearches")
-        # Introduce random pauses before and after searches
-        pause_before_search = random.uniform(
-            11.0, 15.0
-        )  # Random pause between 11 to 15 seconds
-        time.sleep(pause_before_search)
-		
-	try:
-            if remainingSearches != 0:
-            	accountPointsCounter = Searches(desktopBrowser).bingSearches(
-                	remainingSearches
-            	)
-        except:
-            logging.info("Failed to do Searches")
-			
-        pause_after_search = random.uniform(
-            11.0, 15.0
-        )  # Random pause between 11 to 15 seconds
-        time.sleep(pause_after_search)
-
-        desktopBrowser.utils.goHome()
-        goalPoints = 3000
-        goalTitle = desktopBrowser.utils.getGoalTitle()
-        desktopBrowser.closeBrowser()
-
     try:
-    	if remainingSearchesM != 0:
-        	desktopBrowser.closeBrowser()
-	        with Browser(mobile=True, account=currentAccount, args=args) as mobileBrowser:
-		    try:
-                        accountPointsCounter = Login(mobileBrowser).login()
-		    except:
-        		logging.info("Failed to log in mobile")
-		    try:
-                        accountPointsCounter = Searches(mobileBrowser).bingSearches(
-                            remainingSearchesM
-            		)
-		    except:
-        		logging.info("Failed to do mobile Searches")
+        with Browser(mobile=False, account=currentAccount, args=args) as desktopBrowser:
+            try:
+                accountPointsCounter = Login(desktopBrowser).login()
+            except:
+                logging.info("Failed to log in Desktop")
+            
 
-            	mobileBrowser.utils.goHome()
-            	goalPoints = 3000
-            	goalTitle = mobileBrowser.utils.getGoalTitle()
-            	mobileBrowser.closeBrowser()
+            startingPoints = accountPointsCounter
+            if startingPoints == "Locked":
+                notifier.send("🚫 Account is Locked", currentAccount)
+                return 0
+            if startingPoints == "Verify":
+                notifier.send("❗ Account needs to be verified", currentAccount)
+                return 0
+            logging.info(f"[POINTS] You have {desktopBrowser.utils.formatNumber(accountPointsCounter)} points on your account")
+            
+            try:
+                DailySet(desktopBrowser).completeDailySet()
+            except:
+                logging.info("Failed to do Daily set")
+                
+
+            try:
+                PunchCards(desktopBrowser).completePunchCards()
+            except:
+                logging.info("Failed to do PunchCards")
+                
+
+            try:
+                MorePromotions(desktopBrowser).completeMorePromotions()
+            except:
+                logging.info("Failed to do MorePromotions")
+                
+
+            try:
+                remainingSearches, remainingSearchesM = desktopBrowser.utils.getRemainingSearches()
+            except:
+                logging.info("Failed to getRemainingSearches")
+ 
+
+            # Introduce random pauses before and after searches
+            pause_before_search = random.uniform(11.0, 15.0)  # Random pause between 11 to 15 seconds
+            time.sleep(pause_before_search)
+
+            try:
+                if remainingSearches != 0:
+                    accountPointsCounter = Searches(desktopBrowser).bingSearches(remainingSearches)
+            except:
+                logging.info("Failed to do Searches")
+           
+
+            pause_after_search = random.uniform(11.0, 15.0)  # Random pause between 11 to 15 seconds
+            time.sleep(pause_after_search)
+            
+            desktopBrowser.utils.goHome()
+            goalPoints = 3000
+            try:
+                goalTitle = desktopBrowser.utils.getGoalTitle()
+            except:
+                logging.info("Failed to retrieve goal title")
+               
+
     except:
-        logging.info("Failed to do mobile Searches")
-		
-    logging.info(
-        f"[POINTS] You have earned {desktopBrowser.utils.formatNumber(accountPointsCounter - startingPoints)} points today !"
-    )
-    logging.info(
-        f"[POINTS] You are now at {desktopBrowser.utils.formatNumber(accountPointsCounter)} points !"
-    )
+        logging.error("An exception occurred")
+
+    if remainingSearchesM != 0:
+        try:
+            with Browser(mobile=True, account=currentAccount, args=args) as mobileBrowser:
+                try:
+                    accountPointsCounter = Login(mobileBrowser).login()
+                except:
+                    logging.info("Failed to log in mobile")
+                  
+
+                try:
+                    if remainingSearchesM != 0:
+                        accountPointsCounter = Searches(mobileBrowser).bingSearches(remainingSearchesM)
+                except:
+                    logging.info("Failed to do mobile Searches")
+                  
+
+                mobileBrowser.utils.goHome()
+
+        except:
+            logging.error("An exception occurred in mobile searches")
+
+    logging.info(f"[POINTS] You have earned {desktopBrowser.utils.formatNumber(accountPointsCounter - startingPoints)} points today!")
+    logging.info(f"[POINTS] You are now at {desktopBrowser.utils.formatNumber(accountPointsCounter)} points!")
+
     goalNotifier = ""
     if goalPoints > 0:
-        logging.info(
-            f"[POINTS] You are now at {(desktopBrowser.utils.formatNumber((accountPointsCounter / goalPoints) * 100))}% of your goal ({goalTitle}) !\n"
-        )
-        goalNotifier = f"🎯 Goal reached: {(desktopBrowser.utils.formatNumber((accountPointsCounter / goalPoints) * 100))}% ({goalTitle})"
+        percentage_of_goal_reached = (accountPointsCounter / goalPoints) * 100
+        logging.info(f"[POINTS] You are now at {desktopBrowser.utils.formatNumber(percentage_of_goal_reached)}% of your goal ({goalTitle})! @everyone")
+        goalNotifier = f"🎯 Goal reached: {desktopBrowser.utils.formatNumber(percentage_of_goal_reached)}% ({goalTitle})"
 
     notifier.send(
-        "\n".join(
-            [
-                f"⭐️ Points earned today: {desktopBrowser.utils.formatNumber(accountPointsCounter - startingPoints)}",
-                f"💰 Total points: {desktopBrowser.utils.formatNumber(accountPointsCounter)}",
-                goalNotifier,
-            ]
-        ),
+        "\n".join([
+            f"⭐️ Points earned today: {desktopBrowser.utils.formatNumber(accountPointsCounter - startingPoints)}",
+            f"💰 Total points: {desktopBrowser.utils.formatNumber(accountPointsCounter)}",
+            goalNotifier,
+        ]),
         currentAccount,
     )
 
     return accountPointsCounter
+
 
 
 def export_points_to_csv(points_data):
@@ -361,7 +357,8 @@ def save_previous_points_data(data):
         json.dump(data, file, indent=4)
 
 
-while True:
-    if __name__ == "__main__":
+
+if __name__ == "__main__":
+    while True:
         main()
         time.sleep(900)
