@@ -18,7 +18,7 @@ class Notifier:
         if user != None:
             message = "\n".join(
                 [
-                    "🏅 MS Rewards Farmer",
+                    "_________________",
                     f"👤 Account: {user.get('username', '')}",
                     message
                 ]
@@ -40,5 +40,5 @@ class Notifier:
 
     def discord(self, message):
         url = self.args["discord"]
-        data = {"username": "Microsoft Rewards Farmer", "content": message}
+        data = {"username": "Nong Dan Vui Ve", "content": message}
         requests.post(url, data=data)

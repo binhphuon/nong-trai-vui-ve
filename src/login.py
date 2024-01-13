@@ -7,7 +7,6 @@ from selenium.webdriver.common.by import By
 
 from src.browser import Browser
 
-from selenium.common.exceptions import WebDriverException, TimeoutException
 
 class Login:
     def __init__(self, browser: Browser):
@@ -51,56 +50,40 @@ class Login:
         logging.info("[LOGIN] Logged-in successfully !")
         return points
 
-
-
     def executeLogin(self):
+        self.utils.waitUntilVisible(By.ID, "loginHeader", 10)
+        logging.info("[LOGIN] " + "Entering email...")
+        self.webdriver.find_element(By.NAME, "loginfmt").send_keys(
+            self.browser.username
+        )
+        self.webdriver.find_element(By.ID, "idSIButton9").click()
+
         try:
-            for attempt in range(3):  # Thử tối đa 3 lần
-                try:
-                    self.utils.waitUntilVisible(By.ID, "loginHeader", 10)
-                    logging.info("[LOGIN] " + "Writing email...")
-                    self.webdriver.find_element(By.NAME, "loginfmt").send_keys(self.browser.username)
-                    self.webdriver.find_element(By.ID, "idSIButton9").click()
-                    self.enterPassword(self.browser.password)
+            self.enterPassword(self.browser.password)
+        except Exception:  # pylint: disable=broad-except
+            logging.error("[LOGIN] " + "2FA Code required !")
+            with contextlib.suppress(Exception):
+                code = self.webdriver.find_element(
+                    By.ID, "idRemoteNGC_DisplaySign"
+                ).get_attribute("innerHTML")
+                logging.error(f"[LOGIN] 2FA code: {code}")
+            logging.info("[LOGIN] Press enter when confirmed on your device...")
+            input()
 
-                    while not (
-                        urllib.parse.urlparse(self.webdriver.current_url).path == "/"
-                        and urllib.parse.urlparse(self.webdriver.current_url).hostname
-                        == "account.microsoft.com"
-                    ):
-                        if "Abuse" in str(self.webdriver.current_url):
-                            logging.error(f"[LOGIN] {self.browser.username} is locked")
-                            return True
-                        self.utils.tryDismissAllMessages()
-                        time.sleep(1)
-                    if self.isLoginSuccessful():
-                        return
-                    else:
-                        logging.info(f"[LOGIN] Đăng nhập thất bại, thử lại lần {attempt + 1}")
-                except WebDriverException:
-                    logging.error("[LOGIN] Trình duyệt không phản hồi, thử lại...")
-                    # Khởi động lại trình duyệt ở đây nếu cần
+        while not (
+            urllib.parse.urlparse(self.webdriver.current_url).path == "/"
+            and urllib.parse.urlparse(self.webdriver.current_url).hostname
+            == "account.microsoft.com"
+        ):
+            if "Abuse" in str(self.webdriver.current_url):
+                logging.error(f"[LOGIN] {self.browser.username} is locked")
+                return True
+            self.utils.tryDismissAllMessages()
+            time.sleep(1)
 
-            logging.error("[LOGIN] Không thể đăng nhập sau 3 lần thử, chuyển sang tài khoản tiếp theo")
-            raise Exception("Đăng nhập thất bại sau 3 lần thử")
-        except TimeoutException:
-            logging.error("[LOGIN] Quá thời gian chờ, chuyển sang tài khoản tiếp theo")
-            raise
-
-    def isLoginSuccessful(self):
-        try:
-            self.utils.waitUntilVisible(By.CSS_SELECTOR, 'html[data-role-name="MeePortal"]', 10)
-            return True
-        except TimeoutException:
-            return False
-
-
-
-
-
-
-
-
+        self.utils.waitUntilVisible(
+            By.CSS_SELECTOR, 'html[data-role-name="MeePortal"]', 10
+        )
 
     def enterPassword(self, password):
         self.utils.waitUntilClickable(By.NAME, "passwd", 10)

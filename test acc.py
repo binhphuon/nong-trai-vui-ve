@@ -45,19 +45,6 @@ def main():
     for currentAccount in loadedAccounts:
         try:
             earned_points = executeBot(currentAccount, notifier, args)
-            account_name = currentAccount.get("username", "")
-            previous_points = previous_points_data.get(account_name, 0)
-
-            # Calculate the difference in points from the prior day
-            points_difference = earned_points - previous_points
-
-            # Append the daily points and points difference to CSV and Excel
-            log_daily_points_to_csv(account_name, earned_points, points_difference)
-
-            # Update the previous day's points data
-            previous_points_data[account_name] = earned_points
-
-            logging.info(f"[POINTS] Data for '{account_name}' appended to the file.")
             close_chrome()
             time.sleep(10)
         except Exception as e:
@@ -80,40 +67,28 @@ def close_chrome():
 
 
 
-def log_daily_points_to_csv(account_name, earned_points, points_difference):
+def log_daily_points_to_csv(date, earned_points, points_difference):
     logs_directory = Path(__file__).resolve().parent / "logs"
     csv_filename = logs_directory / "points_data.csv"
 
-    # Đọc dữ liệu hiện tại từ CSV
-    if csv_filename.exists():
-        with open(csv_filename, mode="r") as file:
-            reader = csv.DictReader(file)
-            data = list(reader)
-    else:
-        data = []
-
-    # Tạo hoặc cập nhật dòng dữ liệu
+    # Create a new row with the date, daily points, and points difference
     date = datetime.now().strftime("%Y-%m-%d")
-    row = next((item for item in data if item["Account Name"] == account_name and item["Date"] == date), None)
-    if row:
-        # Cập nhật dòng nếu tài khoản đã tồn tại
-        row["Earned Points"] = earned_points
-        row["Points Difference"] = points_difference
-    else:
-        # Thêm dòng mới nếu tài khoản chưa tồn tại
-        data.append({
-            "Date": date,
-            "Account Name": account_name,
-            "Earned Points": earned_points,
-            "Points Difference": points_difference,
-        })
+    new_row = {
+        "Date": date,
+        "Earned Points": earned_points,
+        "Points Difference": points_difference,
+    }
 
-    # Ghi lại dữ liệu vào CSV
-    fieldnames = ["Date", "Account Name", "Earned Points", "Points Difference"]
-    with open(csv_filename, mode="w", newline="") as file:
+    fieldnames = ["Date", "Earned Points", "Points Difference"]
+    is_new_file = not csv_filename.exists()
+
+    with open(csv_filename, mode="a", newline="") as file:
         writer = csv.DictWriter(file, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(data)
+
+        if is_new_file:
+            writer.writeheader()
+
+        writer.writerow(new_row)
 
 
 def setupLogging(verbose_notifs, notifier):
@@ -256,95 +231,26 @@ def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
             if startingPoints == "Verify":
                 notifier.send("❗ Account needs to be verified", currentAccount)
                 return 0
-            logging.info(f"[POINTS] You have {desktopBrowser.utils.formatNumber(accountPointsCounter)} points on your account")
-            
-            try:
-                DailySet(desktopBrowser).completeDailySet()
-            except:
-                logging.info("Failed to do Daily set")
-                
 
-            try:
-                PunchCards(desktopBrowser).completePunchCards()
-            except:
-                logging.info("Failed to do PunchCards")
-                
-
-            try:
-                MorePromotions(desktopBrowser).completeMorePromotions()
-            except:
-                logging.info("Failed to do MorePromotions")
-                
-
-            try:
-                remainingSearches, remainingSearchesM = desktopBrowser.utils.getRemainingSearches()
-            except:
-                logging.info("Failed to getRemainingSearches")
- 
-
-            # Introduce random pauses before and after searches
-            pause_before_search = random.uniform(11.0, 15.0)  # Random pause between 11 to 15 seconds
-            time.sleep(pause_before_search)
-
-            try:
-                if remainingSearches != 0:
-                    accountPointsCounter = Searches(desktopBrowser).bingSearches(remainingSearches)
-            except:
-                logging.info("Failed to do Searches")
-           
-
-            pause_after_search = random.uniform(11.0, 15.0)  # Random pause between 11 to 15 seconds
-            time.sleep(pause_after_search)
-            
-            desktopBrowser.utils.goHome()
             goalPoints = 3000
             try:
                 goalTitle = desktopBrowser.utils.getGoalTitle()
             except:
-                logging.info("Failed to retrieve goal title")
+                logging.info("Failed to retrieve goal title") 
             desktopBrowser.closeBrowser()
-
     except:
         logging.error("An exception occurred")
 
-    if remainingSearchesM != 0:
-        try:
-            with Browser(mobile=True, account=currentAccount, args=args) as mobileBrowser:
-                try:
-                    accountPointsCounter = Login(mobileBrowser).login()
-                except:
-                    logging.info("Failed to log in mobile")
-                  
 
-                try:
-                    if remainingSearchesM != 0:
-                        accountPointsCounter = Searches(mobileBrowser).bingSearches(remainingSearchesM)
-                except:
-                    logging.info("Failed to do mobile Searches")
-                  
-
-                mobileBrowser.utils.goHome()
-                mobileBrowser.closeBrowser()
-        except:
-            logging.error("An exception occurred in mobile searches")
-
-    logging.info(f"[POINTS] You have earned {desktopBrowser.utils.formatNumber(accountPointsCounter - startingPoints)} points today!")
-    logging.info(f"[POINTS] You are now at {desktopBrowser.utils.formatNumber(accountPointsCounter)} points!")
-
-    goalNotifier = ""
-    if goalPoints > 0:
-        percentage_of_goal_reached = (accountPointsCounter / goalPoints) * 100
-        logging.info(f"[POINTS] You are now at {desktopBrowser.utils.formatNumber(percentage_of_goal_reached)}% of your goal ({goalTitle})! @everyone")
-        goalNotifier = f"🎯 Goal reached: {desktopBrowser.utils.formatNumber(percentage_of_goal_reached)}% ({goalTitle})"
-
-    notifier.send(
-        "\n".join([
-            f"⭐️ Points earned today: {desktopBrowser.utils.formatNumber(accountPointsCounter - startingPoints)}",
-            f"💰 Total points: {desktopBrowser.utils.formatNumber(accountPointsCounter)}",
-            goalNotifier,
-        ]),
-        currentAccount,
-    )
+    try:
+        with Browser(mobile=True, account=currentAccount, args=args) as mobileBrowser:
+            try:
+                accountPointsCounter = Login(mobileBrowser).login()
+            except:
+                logging.info("Failed to log in mobile")
+            mobileBrowser.closeBrowser()
+    except:
+        logging.error("An exception occurred in mobile searches")
 
     return accountPointsCounter
 
