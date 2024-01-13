@@ -115,7 +115,6 @@ def log_daily_points_to_csv(account_name, earned_points, points_difference):
         writer.writeheader()
         writer.writerows(data)
 
-
 def setupLogging(verbose_notifs, notifier):
     ColoredFormatter.verbose_notifs = verbose_notifs
     ColoredFormatter.notifier = notifier
