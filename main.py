@@ -385,4 +385,4 @@ def save_previous_points_data(data):
 if __name__ == "__main__":
     while True:
         main()
-        time.sleep(900)
+        time.sleep(21600)

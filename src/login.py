@@ -68,7 +68,7 @@ class Login:
                 ).get_attribute("innerHTML")
                 logging.error(f"[LOGIN] 2FA code: {code}")
             logging.info("[LOGIN] Press enter when confirmed on your device...")
-            input()
+
 
         while not (
             urllib.parse.urlparse(self.webdriver.current_url).path == "/"
