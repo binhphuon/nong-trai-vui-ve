@@ -13,7 +13,7 @@ from pathlib import Path
 import os
 import pandas as pd
 import psutil
-
+import threading
 from src import (
     Browser,
     DailySet,
@@ -233,6 +233,14 @@ def setupAccounts() -> list:
     return loadedAccounts
 
 
+def login_with_timeout(desktopBrowser: Browser, notifier: Notifier, currentAccount):
+    try:
+        return Login(desktopBrowser).login()
+    except Exception as e:
+        notifier.send(f"⚠️ Lỗi khi đăng nhập account {currentAccount.get('username')}: {e}", currentAccount)
+        return None
+
+
 def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
     logging.info(f'******************** {currentAccount.get("username", "")} ********************')
     accountPointsCounter = 0
@@ -240,21 +248,36 @@ def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
     remainingSearchesM = 0
     startingPoints = 0
 
+    skip_account = False
+    
     try:
         with Browser(mobile=False, account=currentAccount, args=args) as desktopBrowser:
-            try:
-                accountPointsCounter = Login(desktopBrowser).login()
-            except:
-                logging.info("Failed to log in Desktop")
+            # Thực hiện đăng nhập trong một luồng riêng biệt
+            login_thread = threading.Thread(target=login_with_timeout, args=(desktopBrowser, notifier, currentAccount))
+            login_thread.start()
+            login_thread.join(timeout=600)  # Đặt giới hạn thời gian là 10 phút
+
+            if login_thread.is_alive():
+                notifier.send(f"⚠️ Account {currentAccount.get('username')} đăng nhập không thành công", currentAccount)
+                login_thread.join()  # Đợi cho đến khi thread hoàn tất
+                desktopBrowser.closeBrowser()
+                skip_account = True
+
+
+            login_result = login_with_timeout(desktopBrowser, notifier, currentAccount)
+
+            if login_result is None or login_result in ["Locked", "Verify"]:
+                notifier.send(f"❗ Account {currentAccount.get('username')} needs attention: {login_result}", currentAccount)
+                desktopBrowser.closeBrowser()
+                skip_account = True
+
+
+            accountPointsCounter = login_result
+
             
 
             startingPoints = accountPointsCounter
-            if startingPoints == "Locked":
-                notifier.send("🚫 Account is Locked", currentAccount)
-                return 0
-            if startingPoints == "Verify":
-                notifier.send("❗ Account needs to be verified", currentAccount)
-                return 0
+
             logging.info(f"[POINTS] You have {desktopBrowser.utils.formatNumber(accountPointsCounter)} points on your account")
             
             try:
@@ -309,10 +332,26 @@ def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
     if remainingSearchesM != 0:
         try:
             with Browser(mobile=True, account=currentAccount, args=args) as mobileBrowser:
-                try:
-                    accountPointsCounter = Login(mobileBrowser).login()
-                except:
-                    logging.info("Failed to log in mobile")
+                login_thread = threading.Thread(target=login_with_timeout, args=(mobileBrowser, notifier, currentAccount))
+                login_thread.start()
+                login_thread.join(timeout=600)  # Đặt giới hạn thời gian là 10 phút
+
+                if login_thread.is_alive():
+                    notifier.send(f"⚠️ Account {currentAccount.get('username')} đăng nhập trên mobile không thành công", currentAccount)
+                    login_thread.join()  # Đợi cho đến khi thread hoàn tất
+                    mobileBrowser.closeBrowser()
+                    skip_account = True
+
+
+                login_result = login_with_timeout(mobileBrowser, notifier, currentAccount)
+
+                if login_result is None or login_result in ["Locked", "Verify"]:
+                    notifier.send(f"❗ Account {currentAccount.get('username')} needs attention: {login_result}", currentAccount)
+                    mobileBrowser.closeBrowser()
+                    skip_account = True
+
+
+                accountPointsCounter = login_result or 0
                   
 
                 try:
@@ -344,7 +383,10 @@ def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
         ]),
         currentAccount,
     )
-
+    
+    if skip_account:
+        return 0
+    
     return accountPointsCounter
 
 
@@ -385,4 +427,4 @@ def save_previous_points_data(data):
 if __name__ == "__main__":
     while True:
         main()
-        time.sleep(21600)
+        time.sleep(900)

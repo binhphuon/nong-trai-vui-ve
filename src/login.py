@@ -53,6 +53,7 @@ class Login:
     def executeLogin(self):
         self.utils.waitUntilVisible(By.ID, "loginHeader", 10)
         logging.info("[LOGIN] " + "Entering email...")
+        time.sleep(5)
         self.webdriver.find_element(By.NAME, "loginfmt").send_keys(
             self.browser.username
         )
