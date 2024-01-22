@@ -17,13 +17,13 @@ class Login:
     def login(self):
         logging.info("[LOGIN] " + "Logging-in...")
         self.webdriver.get(
-            "https://rewards.bing.com/Signin/"
+            "https://login.live.com/"
         )  # changed site to allow bypassing when M$ blocks access to login.live.com randomly
         alreadyLoggedIn = False
         while True:
             try:
                 self.utils.waitUntilVisible(
-                    By.CSS_SELECTOR, 'html[data-role-name="RewardsPortal"]', 0.1
+                    By.CSS_SELECTOR, 'html[data-role-name="MeePortal"]', 0.1
                 )
                 alreadyLoggedIn = True
                 break
@@ -58,17 +58,8 @@ class Login:
         )
         self.webdriver.find_element(By.ID, "idSIButton9").click()
 
-        try:
-            self.enterPassword(self.browser.password)
-        except Exception:  # pylint: disable=broad-except
-            logging.error("[LOGIN] " + "2FA Code required !")
-            with contextlib.suppress(Exception):
-                code = self.webdriver.find_element(
-                    By.ID, "idRemoteNGC_DisplaySign"
-                ).get_attribute("innerHTML")
-                logging.error(f"[LOGIN] 2FA code: {code}")
-            logging.info("[LOGIN] Press enter when confirmed on your device...")
-
+        time.sleep(5)
+        self.enterPassword(self.browser.password)
 
         while not (
             urllib.parse.urlparse(self.webdriver.current_url).path == "/"
