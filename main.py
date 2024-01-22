@@ -333,8 +333,8 @@ def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
     goalNotifier = ""
     if goalPoints > 0:
         percentage_of_goal_reached = (accountPointsCounter / goalPoints) * 100
-        logging.info(f"[POINTS] You are now at {desktopBrowser.utils.formatNumber(percentage_of_goal_reached)}% of your goal ({goalTitle})! @everyone")
-        goalNotifier = f"🎯 Goal reached: {desktopBrowser.utils.formatNumber(percentage_of_goal_reached)}% ({goalTitle})"
+        logging.info(f"[POINTS] You are now at {desktopBrowser.utils.formatNumber(percentage_of_goal_reached)}% of your goal ({goalTitle})! ")
+        goalNotifier = f"🎯 Goal reached: {desktopBrowser.utils.formatNumber(percentage_of_goal_reached)}% ({goalTitle}) @everyone"
 
     notifier.send(
         "\n".join([
