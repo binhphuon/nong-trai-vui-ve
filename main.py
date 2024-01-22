@@ -237,7 +237,7 @@ def login_with_timeout(desktopBrowser: Browser, notifier: Notifier, currentAccou
     try:
         return Login(desktopBrowser).login()
     except Exception as e:
-        notifier.send(f"⚠️ Lỗi khi đăng nhập account {currentAccount.get('username')}: {e}", currentAccount)
+        notifier.send(f"⚠️ Lỗi khi đăng nhập account {currentAccount.get('username')}: @everyone", currentAccount)
         return None
 
 
@@ -373,17 +373,20 @@ def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
     if goalPoints > 0:
         percentage_of_goal_reached = (accountPointsCounter / goalPoints) * 100
         logging.info(f"[POINTS] You are now at {desktopBrowser.utils.formatNumber(percentage_of_goal_reached)}% of your goal ({goalTitle})! ")
-        goalNotifier = f"🎯 Goal reached: {desktopBrowser.utils.formatNumber(percentage_of_goal_reached)}% ({goalTitle}) @everyone"
+        goalNotifier = f"🎯 Goal reached: {desktopBrowser.utils.formatNumber(percentage_of_goal_reached)}% ({goalTitle})"
 
     notifier.send(
         "\n".join([
+            f"*****************************",
             f"⭐️ Points earned today: {desktopBrowser.utils.formatNumber(accountPointsCounter - startingPoints)}",
             f"💰 Total points: {desktopBrowser.utils.formatNumber(accountPointsCounter)}",
             goalNotifier,
         ]),
         currentAccount,
     )
-    
+    if accountPointsCounter > goalPoints:
+        notifier.send(f"🎯 Đã đủ point @everyone")
+        
     if skip_account:
         return 0
     
