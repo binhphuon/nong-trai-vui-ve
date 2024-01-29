@@ -386,10 +386,14 @@ def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
     )
     if accountPointsCounter > goalPoints:
         notifier.send(f"🎯 Đã đủ point @everyone")
-        
+
     if skip_account:
         return 0
     
+    if remainingSearchesM == 0:
+        logging.info(f"[SLEEP] Account is lvl 1!!! Sleeping for 2 hours")
+        time.sleep(random.randint(3500, 4000))
+        
     return accountPointsCounter
 
 
