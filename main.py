@@ -233,13 +233,13 @@ def setupAccounts() -> list:
     return loadedAccounts
 
 
-def login_with_timeout(desktopBrowser: Browser, notifier: Notifier, currentAccount):
+def login_with_timeout(desktopBrowser, notifier, currentAccount, shared_result):
     try:
-        return Login(desktopBrowser).login()
+        login_result = Login(desktopBrowser).login()
+        shared_result['login_result'] = login_result
     except Exception as e:
-        notifier.send(f"⚠️ Lỗi khi đăng nhập account {currentAccount.get('username')}: @everyone", currentAccount)
-        return None
-
+        notifier.send(f"⚠️ Error occurred during login for account {currentAccount.get('username')}: {e}", currentAccount)
+        shared_result['login_result'] = None
 
 def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
     logging.info(f'******************** {currentAccount.get("username", "")} ********************')
@@ -247,37 +247,29 @@ def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
     remainingSearches = 0
     remainingSearchesM = 0
     startingPoints = 0
-
     skip_account = False
-    
+    shared_result = {}
+
     try:
         with Browser(mobile=False, account=currentAccount, args=args) as desktopBrowser:
-            # Thực hiện đăng nhập trong một luồng riêng biệt
-            login_thread = threading.Thread(target=login_with_timeout, args=(desktopBrowser, notifier, currentAccount))
+            login_thread = threading.Thread(target=login_with_timeout, args=(desktopBrowser, notifier, currentAccount, shared_result))
             login_thread.start()
-            login_thread.join(timeout=600)  # Đặt giới hạn thời gian là 10 phút
+            login_thread.join(timeout=600)
 
             if login_thread.is_alive():
                 notifier.send(f"⚠️ Account {currentAccount.get('username')} đăng nhập không thành công", currentAccount)
                 login_thread.join()  # Đợi cho đến khi thread hoàn tất
                 desktopBrowser.closeBrowser()
                 skip_account = True
-
-
-            login_result = login_with_timeout(desktopBrowser, notifier, currentAccount)
-
-            if login_result is None or login_result in ["Locked", "Verify"]:
-                notifier.send(f"❗ Account {currentAccount.get('username')} needs attention: {login_result}", currentAccount)
+            elif shared_result.get('login_result') is not None:
+                accountPointsCounter = shared_result['login_result']
+                startingPoints = accountPointsCounter
+                login_successful = True
+            else:
+                notifier.send(f"❗ Account {currentAccount.get('username')} needs attention", currentAccount)
                 desktopBrowser.closeBrowser()
                 skip_account = True
-
-
-            accountPointsCounter = login_result
-
-            
-
-            startingPoints = accountPointsCounter
-
+    
             logging.info(f"[POINTS] You have {desktopBrowser.utils.formatNumber(accountPointsCounter)} points on your account")
             
             try:
@@ -350,6 +342,7 @@ def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
                     mobileBrowser.closeBrowser()
                     skip_account = True
 
+    
 
                 accountPointsCounter = login_result or 0
                   
@@ -386,10 +379,10 @@ def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
     )
     if accountPointsCounter > goalPoints:
         notifier.send(f"🎯 Đã đủ point @everyone")
-
+        
     if skip_account:
         return 0
-    
+
     if remainingSearchesM == 0:
         logging.info(f"[SLEEP] Account is lvl 1!!! Sleeping for 2 hours")
         time.sleep(random.randint(3500, 4000))
