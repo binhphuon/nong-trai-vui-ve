@@ -321,30 +321,26 @@ def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
     except:
         logging.error("An exception occurred")
 
-    if remainingSearchesM != 0:
+    if not skip_account and remainingSearchesM != 0:
+        shared_result_mobile = {}  # Sử dụng dictionary mới để chia sẻ kết quả đăng nhập mobile
         try:
             with Browser(mobile=True, account=currentAccount, args=args) as mobileBrowser:
-                login_thread = threading.Thread(target=login_with_timeout, args=(mobileBrowser, notifier, currentAccount))
-                login_thread.start()
-                login_thread.join(timeout=600)  # Đặt giới hạn thời gian là 10 phút
+                login_thread_mobile = threading.Thread(target=login_with_timeout, args=(mobileBrowser, notifier, currentAccount, shared_result_mobile))
+                login_thread_mobile.start()
+                login_thread_mobile.join(timeout=600)
 
-                if login_thread.is_alive():
+                if login_thread_mobile.is_alive():
                     notifier.send(f"⚠️ Account {currentAccount.get('username')} đăng nhập trên mobile không thành công", currentAccount)
-                    login_thread.join()  # Đợi cho đến khi thread hoàn tất
+                    login_thread_mobile.join()
                     mobileBrowser.closeBrowser()
                     skip_account = True
-
-
-                login_result = login_with_timeout(mobileBrowser, notifier, currentAccount)
-
-                if login_result is None or login_result in ["Locked", "Verify"]:
-                    notifier.send(f"❗ Account {currentAccount.get('username')} needs attention: {login_result}", currentAccount)
+                elif shared_result_mobile.get('login_result') is not None:
+                    # Nếu đăng nhập thành công, cập nhật accountPointsCounter từ kết quả mobile
+                    accountPointsCounter = shared_result_mobile['login_result']
+                else:
+                    notifier.send(f"❗ Account {currentAccount.get('username')} needs attention on mobile login", currentAccount)
                     mobileBrowser.closeBrowser()
                     skip_account = True
-
-    
-
-                accountPointsCounter = login_result or 0
                   
 
                 try:
