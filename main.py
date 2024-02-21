@@ -319,8 +319,8 @@ def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
                 logging.info("Failed to retrieve goal title")
             desktopBrowser.closeBrowser()
 
-    except:
-        logging.error("An exception occurred")
+    except Exception as e:
+        logging.error(f"An exception occurred, {e}")
     else:
         if not skip_account and remainingSearchesM != 0:
             shared_result_mobile = {}  # Sử dụng dictionary mới để chia sẻ kết quả đăng nhập mobile
