@@ -279,9 +279,10 @@ class Utils:
         return remainingDesktop, remainingMobile
 
     def formatNumber(self, number, num_decimals=2):
+        abs_number = abs(number)
         # Format a number with the specified number of decimals
         return pylocale.format_string(
-            f"%10.{num_decimals}f", number, grouping=True
+            f"%10.{num_decimals}f", abs_number, grouping=True
         ).strip()
 
     def randomSeconds(self, max_value):

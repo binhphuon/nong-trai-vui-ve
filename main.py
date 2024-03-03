@@ -44,7 +44,7 @@ def main():
 
     for currentAccount in loadedAccounts:
         try:
-            earned_points = executeBot(currentAccount, notifier, args)
+            earned_points, mobile_status = executeBot(currentAccount, notifier, args)
             account_name = currentAccount.get("username", "")
             previous_points = previous_points_data.get(account_name, 0)
 
@@ -52,7 +52,7 @@ def main():
             points_difference = earned_points - previous_points
 
             # Append the daily points and points difference to CSV and Excel
-            log_daily_points_to_csv(account_name, earned_points, points_difference)
+            log_daily_points_to_csv(account_name, earned_points, points_difference, mobile_status)
 
             # Update the previous day's points data
             previous_points_data[account_name] = earned_points
@@ -80,7 +80,7 @@ def close_chrome():
 
 
 
-def log_daily_points_to_csv(account_name, earned_points, points_difference):
+def log_daily_points_to_csv(account_name, earned_points, points_difference, mobile_logged_in):
     logs_directory = Path(__file__).resolve().parent / "logs"
     csv_filename = logs_directory / "points_data.csv"
 
@@ -94,11 +94,13 @@ def log_daily_points_to_csv(account_name, earned_points, points_difference):
 
     # Tạo hoặc cập nhật dòng dữ liệu
     date = datetime.now().strftime("%Y-%m-%d")
-    row = next((item for item in data if item["Account Name"] == account_name and item["Date"] == date), None)
+    row = next((item for item in data if item["Account Name"] == account_name), None)
     if row:
         # Cập nhật dòng nếu tài khoản đã tồn tại
+        row["Date"] = date
         row["Earned Points"] = earned_points
         row["Points Difference"] = points_difference
+        row["MobileLoggedIn"] = mobile_logged_in
     else:
         # Thêm dòng mới nếu tài khoản chưa tồn tại
         data.append({
@@ -106,10 +108,11 @@ def log_daily_points_to_csv(account_name, earned_points, points_difference):
             "Account Name": account_name,
             "Earned Points": earned_points,
             "Points Difference": points_difference,
+            "MobileLoggedIn": mobile_logged_in
         })
 
     # Ghi lại dữ liệu vào CSV
-    fieldnames = ["Date", "Account Name", "Earned Points", "Points Difference"]
+    fieldnames = ["Date", "Account Name", "Earned Points", "Points Difference", "MobileLoggedIn"]
     with open(csv_filename, mode="w", newline="") as file:
         writer = csv.DictWriter(file, fieldnames=fieldnames)
         writer.writeheader()
@@ -241,6 +244,34 @@ def login_with_timeout(desktopBrowser, notifier, currentAccount, shared_result):
         notifier.send(f"⚠️ Error occurred during login for account {currentAccount.get('username')}: {e}", currentAccount)
         shared_result['login_result'] = None
 
+def checkIfLogged(account_name):
+    logs_directory = Path(__file__).resolve().parent / "logs"
+    csv_filename = logs_directory / "points_data.csv"
+
+    # Kiểm tra file tồn tại hay không
+    if not csv_filename.exists():
+        return None
+
+    with open(csv_filename, mode="r") as file:
+        reader = csv.DictReader(file)
+        for row in reader:
+            if row["Account Name"] == account_name and int(row["Earned Points"]) != 0:
+                return int(row["Earned Points"])
+    return None
+
+def check_mobile_logged_in_status(account_name):
+    logs_directory = Path(__file__).resolve().parent / "logs"
+    csv_filename = logs_directory / "points_data.csv"
+    if not csv_filename.exists():
+        return False
+
+    with open(csv_filename, mode="r") as file:
+        reader = csv.DictReader(file)
+        for row in reader:
+            if row["Account Name"] == account_name:
+                return row.get("MobileLoggedIn", "False") == "True"
+    return False
+
 def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
     logging.info(f'******************** {currentAccount.get("username", "")} ********************')
     accountPointsCounter = 0
@@ -250,29 +281,42 @@ def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
     skip_account = False
     shared_result = {}
     desktopBrowser = None
+    account_name = currentAccount.get("username", "")
+    accountPointsCounter = checkIfLogged(account_name)
+    mobile_logged_in_status = check_mobile_logged_in_status(account_name)
+    shared_result_mobile = {}
+    perform_mobile_search = False
     
     try:
         with Browser(mobile=False, account=currentAccount, args=args) as desktopBrowser:
-            login_thread = threading.Thread(target=login_with_timeout, args=(desktopBrowser, notifier, currentAccount, shared_result))
-            login_thread.start()
-            login_thread.join(timeout=600)
-
-            if login_thread.is_alive():
-                notifier.send(f"⚠️ Account {currentAccount.get('username')} đăng nhập không thành công", currentAccount)
-                login_thread.join()  # Đợi cho đến khi thread hoàn tất
-                desktopBrowser.closeBrowser()
-                skip_account = True
-            elif shared_result.get('login_result') is not None:
-                accountPointsCounter = shared_result['login_result']
-                startingPoints = accountPointsCounter
+            if accountPointsCounter is not None:
+                logging.info(f"[SKIP LOGIN] {account_name} has been already logged in with points: {accountPointsCounter}")
+                startingPoints = accountPointsCounter 
                 login_successful = True
+
             else:
-                notifier.send(f"❗ Account {currentAccount.get('username')} needs attention", currentAccount)
-                desktopBrowser.closeBrowser()
-                skip_account = True
-    
+                # Thực hiện quá trình đăng nhập nếu chưa có điểm
+                login_thread = threading.Thread(target=login_with_timeout, args=(desktopBrowser, notifier, currentAccount, shared_result))
+                login_thread.start()
+                login_thread.join(timeout=600)
+
+                if login_thread.is_alive():
+                    notifier.send(f"⚠️ Account {currentAccount.get('username')} đăng nhập không thành công", currentAccount)
+                    login_thread.join()  # Đợi cho đến khi thread hoàn tất
+                    desktopBrowser.closeBrowser()
+                    skip_account = True
+              
+                elif shared_result.get('login_result') is not None:
+                    accountPointsCounter = shared_result['login_result']
+                    startingPoints = accountPointsCounter
+                    login_successful = True
+                else:
+                    notifier.send(f"❗ Account {currentAccount.get('username')} needs attention", currentAccount)
+                    desktopBrowser.closeBrowser()
+                    skip_account = True
+
             logging.info(f"[POINTS] You have {desktopBrowser.utils.formatNumber(accountPointsCounter)} points on your account")
-            
+                        
             try:
                 DailySet(desktopBrowser).completeDailySet()
             except:
@@ -322,38 +366,48 @@ def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
     except Exception as e:
         logging.error(f"An exception occurred, {e}")
     else:
-        if not skip_account and remainingSearchesM != 0:
-            shared_result_mobile = {}  # Sử dụng dictionary mới để chia sẻ kết quả đăng nhập mobile
+        if not skip_account and not mobile_logged_in_status and remainingSearchesM != 0:
+            # Nếu chưa đăng nhập mobile trước đó và có nhu cầu tìm kiếm mobile, thực hiện đăng nhập mobile
             try:
                 with Browser(mobile=True, account=currentAccount, args=args) as mobileBrowser:
                     login_thread_mobile = threading.Thread(target=login_with_timeout, args=(mobileBrowser, notifier, currentAccount, shared_result_mobile))
                     login_thread_mobile.start()
                     login_thread_mobile.join(timeout=600)
-
+                    earnedPointsToday = accountPointsCounter - startingPoints
                     if login_thread_mobile.is_alive():
                         notifier.send(f"⚠️ Account {currentAccount.get('username')} đăng nhập trên mobile không thành công", currentAccount)
                         login_thread_mobile.join()
                         mobileBrowser.closeBrowser()
-                        skip_account = True
                     elif shared_result_mobile.get('login_result') is not None:
-                        # Nếu đăng nhập thành công, cập nhật accountPointsCounter từ kết quả mobile
-                        accountPointsCounter = shared_result_mobile['login_result']
+                        # Đăng nhập mobile thành công, cập nhật CSV và quyết định thực hiện tìm kiếm mobile
+                        log_daily_points_to_csv(account_name, accountPointsCounter, earnedPointsToday, "True")
+                        perform_mobile_search = True
                     else:
                         notifier.send(f"❗ Account {currentAccount.get('username')} needs attention on mobile login", currentAccount)
                         mobileBrowser.closeBrowser()
-                        skip_account = True
-                  
 
-                    try:
-                        if remainingSearchesM != 0:
-                            accountPointsCounter = Searches(mobileBrowser).bingSearches(remainingSearchesM)
-                    except:
-                        logging.info("Failed to do mobile Searches")
-                
-                    mobileBrowser.utils.goHome()
+            except Exception as e:
+                logging.error(f"An exception occurred in mobile searches: {e}")
+            finally:
+                if mobileBrowser is not None:
                     mobileBrowser.closeBrowser()
-            except:
-                logging.error("An exception occurred in mobile searches")
+
+        else:
+            # Nếu đã đăng nhập mobile trước đó hoặc không cần tìm kiếm mobile, chỉ định thực hiện tìm kiếm mà không cần đăng nhập lại
+            perform_mobile_search = True
+
+        # Thực hiện tìm kiếm mobile nếu được chỉ định
+        if not skip_account and  perform_mobile_search and remainingSearchesM != 0:
+            # Có thể cần một instance Browser mới hoặc sử dụng instance hiện có để thực hiện tìm kiếm
+            # Đảm bảo rằng bạn đang trong phiên bản mobile của trình duyệt để thực hiện tìm kiếm
+            try:
+                with Browser(mobile=True, account=currentAccount, args=args) as mobileBrowser:
+                    accountPointsCounter = Searches(mobileBrowser).bingSearches(remainingSearchesM)
+            except Exception as e:
+                logging.error(f"An exception occurred during mobile searches: {e}")
+
+
+                
     finally:
         if desktopBrowser is not None:
             try:
@@ -386,8 +440,8 @@ def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
     if remainingSearchesM == 0:
         logging.info(f"[SLEEP] Account is lvl 1!!! Sleeping for 2 hours")
         time.sleep(random.randint(3500, 4000))
-        
-    return accountPointsCounter
+    mobile_logged_in_status = check_mobile_logged_in_status(account_name)    
+    return accountPointsCounter, mobile_logged_in_status
 
 
 
