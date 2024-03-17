@@ -135,9 +135,9 @@ class Login:
         for char in address_hotmail:
             hotmail_field.send_keys(char)
             time.sleep(delay)
-        time.sleep(1)
+        time.sleep(5)
         self.webdriver.find_element(By.ID, "iSignupAction").click()
-        time.sleep(2)
+        time.sleep(5)
         
         # B6 - B8: Điền mật khẩu và click next
         passhotmail_field = WebDriverWait(self.webdriver, 10).until(
@@ -146,10 +146,10 @@ class Login:
         for char in pass_hotmail:
             passhotmail_field.send_keys(char)
             time.sleep(delay)
-        time.sleep(1)
+        time.sleep(5)
         if passhotmail_field.get_attribute("value") == pass_hotmail:
             self.webdriver.find_element(By.ID, "iSignupAction").click()
-        time.sleep(2)
+        time.sleep(5)
         
         # B9 - B11: Điền tên, họ và click next
         name_field = self.webdriver.find_element(By.NAME, "FirstName")
@@ -157,13 +157,14 @@ class Login:
         for char in name:
             name_field.send_keys(char)
             time.sleep(delay)
+        time.sleep(5)
         for char in last_name:
             lastname_field.send_keys(char)
             time.sleep(delay)
-        time.sleep(1)
+        time.sleep(5)
         if name_field.get_attribute("value") == name and lastname_field.get_attribute("value") == last_name:
             self.webdriver.find_element(By.ID, "iSignupAction").click()
-        time.sleep(2)
+        time.sleep(5)
         
         # B12: Điền ngày tháng năm sinh và click next
         # Các ID cho dropdown menu ngày tháng năm
@@ -176,10 +177,15 @@ class Login:
         Years = ["1970", "1971", "1972", "1973", "1974", "1975", "1976", "1977", "1978", "1979", "1980", "1981", "1982", "1983", "1984", "1985", "1986", "1987", "1988", "1989", "1990", "1991", "1992", "1993", "1994", "1995", "1996", "1997", "1998", "1999", "2000", "2001", "2002", "2003", "2004", "2005"]
         # Chọn giá trị từ dropdown menu.
         self.webdriver.find_element(By.ID, "BirthMonth").click()
+        time.sleep(5)
         month_select.select_by_visible_text(random.choice(Month))
+        time.sleep(5)
         self.webdriver.find_element(By.ID, "BirthDay").click()
+        time.sleep(5)
         day_select.select_by_visible_text(random.choice(Days))
+        time.sleep(5)
         year_select.send_keys(random.choice(Years))
+        time.sleep(5)
 
         time.sleep(1) # Đợi dropdown được cập nhật
         self.webdriver.find_element(By.ID, "iSignupAction").click()
