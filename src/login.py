@@ -184,6 +184,7 @@ class Login:
         time.sleep(1) # Đợi dropdown được cập nhật
         self.webdriver.find_element(By.ID, "iSignupAction").click()
         input("Enter when done! ")
+        time.sleep(9999999)
 
 
 
