@@ -438,8 +438,8 @@ def executeBot(currentAccount, notifier: Notifier, args: argparse.Namespace):
         return 0
 
     if remainingSearchesM == 0:
-        logging.info(f"[SLEEP] Account is lvl 1!!! Sleeping for 2 hours")
-        time.sleep(random.randint(3500, 4000))
+        logging.info(f"[SLEEP] Account is lvl 1!!! Sleeping for 5 hours")
+        time.sleep(random.randint(17890, 21234))
     mobile_logged_in_status = check_mobile_logged_in_status(account_name)    
     return accountPointsCounter, mobile_logged_in_status
 
